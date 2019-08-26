@@ -31,6 +31,6 @@ def get_recent_monday(today):
 def get_last_week_dates(today):
     week_end = get_recent_monday(today)
     week_start = week_end - timedelta(days=7)
-    week_dates = [week_start + timedelta(days=i) for i in range(7)]
+    week_dates = [week_start + timedelta(days=i) for i in range(8)]
     week_dates_fmt = [day.strftime('%#m/%#d') for day in week_dates]
     return week_dates_fmt
