@@ -7,8 +7,10 @@ import operator
 
 import requests
 from bs4 import BeautifulSoup, NavigableString
+import pandas as pd
 
 from dates import get_last_week_dates
+from mail import send_email
 
 
 def between(cur, end):
@@ -60,14 +62,25 @@ def generate_album_data(week_dates):
 
     album_dict = {}
     for i, day in enumerate(dates[:-1]):
-        print(day)
         album_dict[day] = join_soup_text(soup, dates[i])
 
     return album_dict
 
 
 def parse_album_dictionary(album_dict):
-    return
+    col_split = {}
+    for key, value in album_dict.items():
+        col_split[key] = [s.split(' ---- ') for s in value]
+
+    multi_df = {}
+    for key, value in col_split.items():
+        multi_df[key] = pd.DataFrame(value, columns=['Artist', 'Album/EP Title'])
+        multi_df[key] = multi_df[key].set_index('Artist')
+        multi_df[key].columns.name = multi_df[key].index.name
+        multi_df[key].index.name = None
+
+    parsed_df = pd.concat(multi_df.values(), keys=multi_df.keys())
+    return parsed_df
 
 
 def generate_album_dictionary(week_dates):
@@ -91,9 +104,10 @@ def main():
     week_dates = get_last_week_dates(today)
     album_dict = generate_album_dictionary(week_dates)
 
-    return album_dict
+    album_df = parse_album_dictionary(album_dict)
+
+    send_email(album_df)
 
 
 if __name__ == '__main__':
-    a = main()
-    print(a)
+    main()

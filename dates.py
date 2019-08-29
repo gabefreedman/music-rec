@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from datetime import date, timedelta
+from datetime import timedelta
 
 
 def get_month(today):
