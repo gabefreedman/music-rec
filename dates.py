@@ -20,7 +20,7 @@ def get_recent_monday(today):
     if today.weekday() == 0:
         recent_monday = today
     elif today.weekday() <= 4:
-        recent_monday = today + timedelta(days=days_ahead)
+        recent_monday = today - timedelta(days=days_ahead)
     else:
         days_behind = 7 - days_ahead
         recent_monday = today + timedelta(days=days_behind)

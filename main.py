@@ -12,7 +12,7 @@ from dates import get_last_week_dates
 
 
 def between(cur, end):
-    while cur and cur != end:
+    while cur and not str(cur).startswith(end):
         if isinstance(cur, NavigableString):
             text = cur.strip()
             if len(text):
@@ -28,16 +28,22 @@ def parse_albums(text):
     sep_text = [re.split(pattern, s) for s in sep]
     sep_text = [item[0] for item in sep_text]
     sep_text = list(filter(None, sep_text))
-    return sep_text
+
+    parsed = [s.split('-') for s in sep_text]
+    parsed = [[s.strip() for s in s1] for s1 in parsed]
+    final_text = [s[0] + '  ----  ' + s[1] for s in parsed]
+
+    return final_text
 
 
-def join_soup_text(soup, tag1, tag2=None):
+def join_soup_text(soup, tag1):
     end_of_month = ['1/31', '2/28', '3/31', '4/30', '5/31', '6/30', '7/31', '8/31', '9/30', '10/31', '11/30', '12/31']
+
     if soup.find('b', text=tag1):
         if tag1 in end_of_month:
-            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling, soup.find('div')))
+            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling, end='<div>'))
         else:
-            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling, soup.find('p', text=tag2)))
+            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling, end='<b>'))
         full_text = parse_albums(full_text)
     else:
         full_text = []
@@ -54,15 +60,17 @@ def generate_album_data(week_dates):
 
     album_dict = {}
     for i, day in enumerate(dates[:-1]):
-        album_dict[day] = join_soup_text(soup, dates[i], dates[i+1])
+        print(day)
+        album_dict[day] = join_soup_text(soup, dates[i])
 
     return album_dict
 
 
-def main():
-    today = date.today()
-    week_dates = get_last_week_dates(today)
+def parse_album_dictionary(album_dict):
+    return
 
+
+def generate_album_dictionary(week_dates):
     group_months = [list(group) for key, group in groupby(week_dates, operator.itemgetter(1))]
     if len(group_months) == 2:
         month1 = group_months[0]
@@ -74,6 +82,14 @@ def main():
         album_dict = {**albums1, **albums2}
     else:
         album_dict = generate_album_data(week_dates)
+
+    return album_dict
+
+
+def main():
+    today = date.today()
+    week_dates = get_last_week_dates(today)
+    album_dict = generate_album_dictionary(week_dates)
 
     return album_dict
 
