@@ -8,6 +8,7 @@ __pycache__/
 
 # Data files
 *.txt
+*.bat
 
 # Distribution / packaging
 .Python

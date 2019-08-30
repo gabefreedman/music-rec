@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+"""This module contains code for doing core HTML requests and
+parsing into tabular format. Main function will generate
+MultiIndex DataFrame and call send_email function to send
+the data via email. I personally choose to schedule this script
+to run weekly.
+
+"""
+
 from datetime import date
 import re
 from itertools import groupby
@@ -14,10 +22,28 @@ from mail import send_email
 
 
 def between(cur, end):
+    """Collect text between HTML tag and given ending string.
+
+    Creates one long string containing all text (not including
+    string representations of HTML tags) from a given HTML tag
+    up to but not including a given ending string.
+
+    Parameters
+    ----------
+    cur : bs4.Tag
+        tag
+    end : str
+        String on which to end search through HTML snippet.
+    Returns
+    -------
+    contents : list of str
+        Contains email login credentials as [user, pass]
+
+    """
     while cur and not str(cur).startswith(end):
         if isinstance(cur, NavigableString):
             text = cur.strip()
-            if len(text):
+            if text:
                 yield text
         elif str(cur) == '<br/>':
             yield 'gbgfgb'
@@ -25,6 +51,24 @@ def between(cur, end):
 
 
 def parse_albums(text):
+    """Parses string containing album and artists text information.
+
+    Creates one long string containing all text (not including
+    string representations of HTML tags) from a given HTML tag
+    up to but not including a given ending string.
+
+    Parameters
+    ----------
+    text : str
+        String containing artist and album names to be separated.
+
+    Returns
+    -------
+    final_text : list of str
+        Each element of list is artist name and album name separated
+        by ----.
+
+    """
     pattern = r'\- \d{1,2}\/(\d{1,2}|\?)'
     sep = text.split('gbgfgb')
     sep_text = [re.split(pattern, s) for s in sep]
@@ -39,13 +83,16 @@ def parse_albums(text):
 
 
 def join_soup_text(soup, tag1):
-    end_of_month = ['1/31', '2/28', '3/31', '4/30', '5/31', '6/30', '7/31', '8/31', '9/30', '10/31', '11/30', '12/31']
+    end_of_month = ['1/31', '2/28', '3/31', '4/30', '5/31', '6/30',
+                    '7/31', '8/31', '9/30', '10/31', '11/30', '12/31']
 
     if soup.find('b', text=tag1):
         if tag1 in end_of_month:
-            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling, end='<div>'))
+            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling,
+                                                         end='<div>'))
         else:
-            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling, end='<b>'))
+            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling,
+                                                         end='<b>'))
         full_text = parse_albums(full_text)
     else:
         full_text = []
@@ -100,6 +147,7 @@ def generate_album_dictionary(week_dates):
 
 
 def main():
+    """Main function for generating data and sending email."""
     today = date.today()
     week_dates = get_last_week_dates(today)
     album_dict = generate_album_dictionary(week_dates)
