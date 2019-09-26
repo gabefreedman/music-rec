@@ -83,13 +83,38 @@ def parse_albums(text):
 
 
 def join_soup_text(soup, tag1):
+    """Filters HTML source and extract text under certain date tag.
+
+    Searches through HTML soup object, using `tag1` to hone in on
+    specific date. This function accounts for if the date in question
+    is at the end of a given month (and therefore would have no
+    succeeding date in the soup to end at.
+
+    Parameters
+    ----------
+    soup : bs4.BeautifulSoup
+        BeautifulSoup object containing parse-able HTML.
+    tag1 : str
+        Text kwarg for soup.find() looking for `b` tags
+
+    Returns
+    -------
+    full_text : list of str
+        Each element of list is artist name and album name separated
+        by ----, or an empty list if no album data is present.
+
+    """
     end_of_month = ['1/31', '2/28', '3/31', '4/30', '5/31', '6/30',
                     '7/31', '8/31', '9/30', '10/31', '11/30', '12/31']
 
     if soup.find('b', text=tag1):
         if tag1 in end_of_month:
-            full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling,
-                                                         end='<div>'))
+            if soup.find('b', text='TBA'):
+                full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling,
+                                                             end='TBA'))
+            else:
+                full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling,
+                                                             end='<div>'))
         else:
             full_text = ''.join(text for text in between(soup.find('b', text=tag1).next_sibling,
                                                          end='<b>'))
@@ -100,6 +125,24 @@ def join_soup_text(soup, tag1):
 
 
 def generate_album_data(week_dates):
+    """Scrapes album data from genius.com New Album Releases.
+
+    Retrieves HTML for new album releases by month and parses through data
+    to isolate album names for specific date range. Generates dictionary
+    to store by-date artist/album pairs.
+
+    Parameters
+    ----------
+    week_dates : list
+        List of dates formatted as {month}/{day}.
+
+    Returns
+    -------
+    album_dict : dict
+        Dictionary with key-value pairs as:
+        {Date} : {List of artist/album names for given date}
+
+    """
     month = week_dates[0][1]
     dates = [week_dates[i][0] for i in range(len(week_dates))]
     url = f'https://genius.com/Genius-{month}-2019-album-release-calendar-annotated'
@@ -109,12 +152,30 @@ def generate_album_data(week_dates):
 
     album_dict = {}
     for i, day in enumerate(dates[:-1]):
+        print(day)
         album_dict[day] = join_soup_text(soup, dates[i])
 
     return album_dict
 
 
 def parse_album_dictionary(album_dict):
+    """Parse dict object into formatted DataFrame for attaching to email
+
+    This function cleans up the dictionary object containing album and artist data
+    to make it easily parsed into a DataFrame object. DataFrames are created by-date
+    and then concatenated at the end.
+
+    Parameters
+    ----------
+    album_dict : dict
+        BeautifulSoup object containing parse-able HTML.
+
+    Returns
+    -------
+    parsed_df : DataFrame
+        Columns are Date, Artist, Album/EP Title.
+
+    """
     col_split = {}
     for key, value in album_dict.items():
         col_split[key] = [s.split(' ---- ') for s in value]
@@ -131,6 +192,25 @@ def parse_album_dictionary(album_dict):
 
 
 def generate_album_dictionary(week_dates):
+    """Generates artist/album dates for arbitrary week dates.
+
+    This function adds to the use of `generate_album_data` by
+    accounting for a list of week dates that spans across two
+    different months and therefore requires two separate HTML
+    requests.
+
+    Parameters
+    ----------
+    week_dates : list
+        List of dates formatted as {month}/{day}.
+
+    Returns
+    -------
+    album_dict : dict
+        Dictionary with key-value pairs as:
+        {Date} : {List of artist/album names for given date}
+
+    """
     group_months = [list(group) for key, group in groupby(week_dates, operator.itemgetter(1))]
     if len(group_months) == 2:
         month1 = group_months[0]

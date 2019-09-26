@@ -59,7 +59,7 @@ def send_email(data):
     password = auth[1]
     receiver = 'gfreedman2108@comcast.net'
     msg = MIMEMultipart()
-    msg['Subject'] = 'Test message'
+    msg['Subject'] = 'New music from last week'
     msg['To'] = receiver
     msg['From'] = sender
 
